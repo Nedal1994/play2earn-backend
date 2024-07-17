@@ -6,13 +6,13 @@ const bodyParser = require('body-parser');
 
 dotenv.config();
 
-const app = express();
+const server = express();
 
 // Middleware
-app.use(bodyParser.json());
+server.use(bodyParser.json());
 
 // Routes
-app.use('/api/auth', authRoutes);
+server.use('/api/auth', authRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
@@ -28,4 +28,4 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // Server setup
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
