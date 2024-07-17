@@ -1,7 +1,7 @@
 // const jwt = require('jsonwebtoken');
 const User = require('../models/user'); // Assuming your User model is defined here
 // const JWT_SECRET = process.env.JWT_SECRET; // Replace with your actual JWT secret key
-
+const Admin = require('../models/admin');
 // Middleware function to authenticate JWT tokens
 const authenticateJWT = (req, res, next) => {
     // const token = req.headers.authorization; // Authorization header should contain "Bearer <token>"
