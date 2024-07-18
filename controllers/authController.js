@@ -1,9 +1,9 @@
 const bcrypt = require('bcryptjs');
-// const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+// const jwt = require('jsonwebtoken')
 const Admin = require('../models/admin');
+const User = require('../models/user');
 
-// const JWT_SECRET = process.env.JWT_SECRET;
+// const JWT_SECRET = process.env.JWT_SECRET; //uncomment it later (for jwt)
 
 exports.registerUser = async (req, res) => {
     const { username, email, password, profile_pic_url } = req.body;
@@ -59,9 +59,10 @@ exports.loginUser = async (req, res) => {
         const validPass = await bcrypt.compare(password, user.password);
         if (!validPass) return res.status(400).json({ error: 'Email or password is wrong' });
     
-        // const token = jwt.sign({ _id: user._id }, JWT_SECRET);
+        // const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '1h' }); //jwt uncomment later
         // res.header('auth-token', token).json({ token });
-        res.json({ message: 'Login successful', user });
+        res.json({ message: 'Login successful', user }); 
+        // res.json({ message: 'Login successful', token }); //uncomment it later (for token)
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -76,10 +77,11 @@ exports.loginAdmin = async (req, res) => {
     
         const validPass = await bcrypt.compare(password, admin.password);
         if (!validPass) return res.status(400).json({ error: 'Email or password is wrong' });
-    
-        // const token = jwt.sign({ _id: admin._id }, JWT_SECRET);
+
+        // const token = jwt.sign({ _id: admin._id }, JWT_SECRET, { expiresIn: '1h' }); //jwt uncomment later
         // res.header('auth-token', token).json({ token });
-        res.json({ message: 'Login successful', admin });
+        res.json({ message: 'Login successful', admin }); 
+        // res.json({ message: 'Login successful', token }); //uncomment it later (for token)
     } catch (error) {
         res.status(400).json({ error: error.message });
     }

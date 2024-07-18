@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 const bodyParser = require('body-parser');
 
 dotenv.config();
@@ -13,6 +14,7 @@ server.use(bodyParser.json());
 
 // Routes
 server.use('/api/auth', authRoutes);
+server.use('/api/tasks', taskRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
