@@ -5,6 +5,7 @@ const User = require('../models/user');
 
 // const JWT_SECRET = process.env.JWT_SECRET; //uncomment it later (for jwt)
 
+// Register User
 exports.registerUser = async (req, res) => {
     const { username, email, password, profile_pic_url } = req.body;
 
@@ -28,6 +29,7 @@ exports.registerUser = async (req, res) => {
     }
 };
 
+// Register Admin
 exports.registerAdmin = async (req, res) => {
     const { username, email, password, profile_pic_url } = req.body;
 
@@ -49,6 +51,7 @@ exports.registerAdmin = async (req, res) => {
     }
 };
 
+// Login User
 exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
 
@@ -68,6 +71,7 @@ exports.loginUser = async (req, res) => {
     }
 };
 
+// Login Admin
 exports.loginAdmin = async (req, res) => {
     const { email, password } = req.body;
 
@@ -85,4 +89,10 @@ exports.loginAdmin = async (req, res) => {
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
+};
+
+// Logout (No JWT verification)
+exports.logout = async (req, res) => {
+    //add anything required later
+    res.json({ message: 'Logout successful' });
 };

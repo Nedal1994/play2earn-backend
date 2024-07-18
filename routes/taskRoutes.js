@@ -3,9 +3,9 @@ const router = express.Router();
 const taskController = require('../controllers/taskController');
 
 router.post('/create', taskController.createTask);
-router.get('/', taskController.getTasks);
+router.get('/', taskController.getAllTasks);
 router.get('/:id', taskController.getTask);
-router.put('/:id', taskController.updateTask);
+router.patch('/:id', taskController.updateTask);
 router.delete('/:id', taskController.deleteTask);
 router.post('/bulk-delete', taskController.bulkDeleteTasks);
 

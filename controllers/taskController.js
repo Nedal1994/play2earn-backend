@@ -14,7 +14,7 @@ exports.createTask = async (req, res) => {
 };
 
 // Get all tasks
-exports.getTasks = async (req, res) => {
+exports.getAllTasks = async (req, res) => {
     try {
         const tasks = await Task.find();
         res.json(tasks);
