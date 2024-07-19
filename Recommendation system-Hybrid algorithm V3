@@ -1,0 +1,174 @@
+const d3 = require('d3');
+const ml = require('ml-modules');
+const fs = require('fs').promises;
+
+async function loadCSV(filename) {
+    const data = await fs.readFile(filename, 'utf8');
+    return d3.csvParse(data);
+}
+
+async function main() {
+    // Load the CSV files
+    const tasks_df = await loadCSV('tasks.csv');
+    const users_df = await loadCSV('users.csv');
+    const user_tasks_df = await loadCSV('user_tasks.csv');
+
+    // Convert timestamp to Date
+    user_tasks_df.forEach(d => d.timestamp = new Date(d.timestamp));
+
+    // Merge dataframes (simplified version)
+    const merged_df = user_tasks_df.map(ut => {
+        const user = users_df.find(u => u.user_id === ut.user_id);
+        const task = tasks_df.find(t => t.task_id === ut.task_id);
+        return {...ut, ...user, ...task};
+    });
+
+    function categorizeUsers(df) {
+        const userGroups = d3.group(df, d => d.user_id);
+        return Array.from(userGroups, ([user_id, group]) => {
+            const user_info = group[0];
+            const tasks_viewed = group.filter(d => d.interaction_type === 'viewed').length;
+            const tasks_completed = group.filter(d => d.interaction_type === 'completed').length;
+            const tasks_completed_easy = group.filter(d => d.interaction_type === 'completed' && d.difficulty === 'Easy').length;
+            const tasks_completed_medium = group.filter(d => d.interaction_type === 'completed' && d.difficulty === 'Medium').length;
+            const tasks_completed_hard = group.filter(d => d.interaction_type === 'completed' && d.difficulty === 'Hard').length;
+            const average_rating = d3.mean(group.filter(d => d.interaction_type === 'completed'), d => +d.rating);
+            
+            const task_times = group.filter(d => d.interaction_type === 'completed').sort((a, b) => a.timestamp - b.timestamp);
+            const time_diffs = task_times.slice(1).map((d, i) => (d.timestamp - task_times[i].timestamp) / 1000);
+            const avg_time_per_task = time_diffs.length > 0 ? d3.mean(time_diffs) : null;
+
+            return {
+                user_id,
+                age: +user_info.age,
+                country: user_info.country,
+                tasks_viewed,
+                tasks_completed,
+                tasks_completed_easy,
+                tasks_completed_medium,
+                tasks_completed_hard,
+                average_rating,
+                avg_time_per_task
+            };
+        });
+    }
+
+    const categorized_users_df = categorizeUsers(merged_df);
+
+    // Standardize features for clustering
+    const features = ['age', 'tasks_viewed', 'tasks_completed', 'tasks_completed_easy', 
+                      'tasks_completed_medium', 'tasks_completed_hard', 'average_rating', 'avg_time_per_task'];
+    
+    const scaler = new ml.StandardScaler();
+    const scaled_features = scaler.fit(categorized_users_df.map(d => features.map(f => d[f])));
+    
+    categorized_users_df.forEach((d, i) => {
+        features.forEach((f, j) => {
+            d[f] = scaled_features[i][j];
+        });
+    });
+
+    // Clustering users
+    const kmeans = new ml.KMeans(5);
+    const clusters = kmeans.fit(categorized_users_df.map(d => features.map(f => d[f])));
+    categorized_users_df.forEach((d, i) => {
+        d.cluster = clusters[i];
+    });
+
+    console.log(categorized_users_df.slice(0, 5));
+
+    // Handle duplicates by averaging the ratings for each (user_id, task_id) pair
+    const user_task_aggregated = d3.rollup(user_tasks_df, 
+        v => d3.mean(v, d => +d.rating),
+        d => d.user_id,
+        d => d.task_id
+    );
+
+    // Create a matrix of users and tasks with averaged ratings as values
+    const users = Array.from(user_task_aggregated.keys());
+    const tasks = Array.from(new Set(user_tasks_df.map(d => d.task_id)));
+    const user_task_matrix = users.map(user => 
+        tasks.map(task => user_task_aggregated.get(user)?.get(task) || 0)
+    );
+
+    // Calculate cosine similarity between tasks (Content-Based)
+    function cosineSimilarity(a, b) {
+        const dotProduct = a.reduce((sum, _, i) => sum + a[i] * b[i], 0);
+        const magnitudeA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+        const magnitudeB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+        return dotProduct / (magnitudeA * magnitudeB);
+    }
+
+    const task_similarity = tasks.map((_, i) => 
+        tasks.map((_, j) => cosineSimilarity(
+            user_task_matrix.map(row => row[i]),
+            user_task_matrix.map(row => row[j])
+        ))
+    );
+
+    // Calculate cosine similarity between users (Collaborative Filtering)
+    const user_similarity = user_task_matrix.map((user1, i) => 
+        user_task_matrix.map((user2, j) => cosineSimilarity(user1, user2))
+    );
+
+    function hybridRecommendTasks(user_id, n_recommendations = 5, alpha = 0.5) {
+        const userIndex = users.indexOf(user_id);
+        const similarUsers = user_similarity[userIndex];
+        const userRatings = user_task_matrix[userIndex];
+
+        const taskSimScores = task_similarity.map(row => 
+            d3.sum(row.map((sim, i) => sim * userRatings[i])) / d3.sum(row)
+        );
+
+        const hybridScores = tasks.map((_, i) => 
+            alpha * taskSimScores[i] + (1 - alpha) * d3.sum(user_task_matrix.map((u, j) => u[i] * similarUsers[j]))
+        );
+
+        return d3.range(tasks.length)
+            .sort((a, b) => hybridScores[b] - hybridScores[a])
+            .slice(0, n_recommendations)
+            .map(i => tasks[i]);
+    }
+
+    // Example usage: Recommend tasks for a specific user
+    const user_id = '1';
+    const recommendedTasks = hybridRecommendTasks(user_id);
+    console.log(`Recommended tasks for user ${user_id}: ${recommendedTasks}`);
+
+    function evaluateRecommendations() {
+        let y_true = [];
+        let y_pred = [];
+
+        users.forEach(user_id => {
+            const actualTasks = user_task_matrix[users.indexOf(user_id)]
+                .map((rating, i) => rating > 0 ? tasks[i] : null)
+                .filter(t => t !== null);
+            const recommendedTasks = hybridRecommendTasks(user_id, actualTasks.length);
+
+            y_true.push(...Array(actualTasks.length).fill(1));
+            y_true.push(...Array(tasks.length - actualTasks.length).fill(0));
+
+            tasks.forEach(task => {
+                y_pred.push(recommendedTasks.includes(task) ? 1 : 0);
+            });
+        });
+
+        // Calculate precision, recall, and F1 score
+        const tp = y_true.reduce((sum, val, i) => sum + (val === 1 && y_pred[i] === 1 ? 1 : 0), 0);
+        const fp = y_true.reduce((sum, val, i) => sum + (val === 0 && y_pred[i] === 1 ? 1 : 0), 0);
+        const fn = y_true.reduce((sum, val, i) => sum + (val === 1 && y_pred[i] === 0 ? 1 : 0), 0);
+
+        const precision = tp / (tp + fp);
+        const recall = tp / (tp + fn);
+        const f1 = 2 * (precision * recall) / (precision + recall);
+
+        // Calculate Mean Absolute Error (MAE)
+        const mae = d3.mean(y_true.map((val, i) => Math.abs(val - y_pred[i])));
+
+        console.log(`Precision: ${precision.toFixed(4)}, Recall: ${recall.toFixed(4)}, F1 Score: ${f1.toFixed(4)}, MAE: ${mae.toFixed(4)}`);
+    }
+
+    evaluateRecommendations();
+}
+
+main().catch(console.error);
