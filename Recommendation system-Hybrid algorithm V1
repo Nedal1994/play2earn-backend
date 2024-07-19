@@ -1,0 +1,188 @@
+const fs = require('fs');
+const csv = require('csv-parser');
+const moment = require('moment');
+const { DataFrame } = require('danfojs-node');
+const KMeans = require('ml-kmeans');
+const StandardScaler = require('ml-std-scaler').StandardScaler;
+const cosineSimilarity = require('compute-cosine-similarity');
+
+// Load CSV files
+async function loadCSV(filePath) {
+    return new Promise((resolve, reject) => {
+        const results = [];
+        fs.createReadStream(filePath)
+            .pipe(csv())
+            .on('data', (data) => results.push(data))
+            .on('end', () => resolve(results))
+            .on('error', (error) => reject(error));
+    });
+}
+
+async function loadData() {
+    const tasks = await loadCSV('tasks.csv');
+    const users = await loadCSV('users.csv');
+    const userTasks = await loadCSV('user_tasks.csv');
+    
+    // Convert timestamp to datetime
+    userTasks.forEach(task => {
+        task.timestamp = moment(task.timestamp);
+    });
+
+    return { tasks, users, userTasks };
+}
+
+// Merge dataframes to combine user information with their task interactions
+function mergeDataframes(userTasks, users, tasks) {
+    const userTasksDF = new DataFrame(userTasks);
+    const usersDF = new DataFrame(users);
+    const tasksDF = new DataFrame(tasks);
+    
+    const mergedDF = userTasksDF.merge(usersDF, { on: 'user_id' }).merge(tasksDF, { on: 'task_id' });
+    return mergedDF;
+}
+
+// Categorize users
+function categorizeUsers(df) {
+    const userGroups = df.groupby(['user_id']);
+    const categorizedUsers = [];
+
+    userGroups.forEach(group => {
+        const userInfo = group.iloc(0, 0).data;
+        const age = userInfo.age;
+        const country = userInfo.country;
+        const tasksViewed = group.query({ 'interaction_type': 'viewed' }).shape[0];
+        const tasksCompleted = group.query({ 'interaction_type': 'completed' }).shape[0];
+        const tasksCompletedEasy = group.query({ 'interaction_type': 'completed', 'difficulty': 'Easy' }).shape[0];
+        const tasksCompletedMedium = group.query({ 'interaction_type': 'completed', 'difficulty': 'Medium' }).shape[0];
+        const tasksCompletedHard = group.query({ 'interaction_type': 'completed', 'difficulty': 'Hard' }).shape[0];
+        const averageRating = group.query({ 'interaction_type': 'completed' }).data.map(row => row.rating).reduce((a, b) => a + b, 0) / tasksCompleted;
+        
+        // Calculate the average time taken to complete each task
+        const taskTimes = group.query({ 'interaction_type': 'completed' }).sort_values('timestamp');
+        const timeDiffs = taskTimes['timestamp'].diff().dropna().to_json();
+        const avgTimePerTask = timeDiffs.reduce((a, b) => a + b, 0) / timeDiffs.length || null;
+
+        categorizedUsers.push({
+            user_id: userInfo.user_id,
+            age: age,
+            country: country,
+            tasks_viewed: tasksViewed,
+            tasks_completed: tasksCompleted,
+            tasks_completed_easy: tasksCompletedEasy,
+            tasks_completed_medium: tasksCompletedMedium,
+            tasks_completed_hard: tasksCompletedHard,
+            average_rating: averageRating,
+            avg_time_per_task: avgTimePerTask
+        });
+    });
+
+    return new DataFrame(categorizedUsers);
+}
+
+// Standardize features for clustering
+function standardizeFeatures(df, features) {
+    const scaler = new StandardScaler();
+    const scaledFeatures = scaler.fit_transform(df[features].values);
+    df[features] = scaledFeatures;
+    return df;
+}
+
+// Clustering users
+function clusterUsers(df, features, n_clusters) {
+    const kmeans = new KMeans();
+    const clusters = kmeans.kmeans(df[features].values, n_clusters);
+    df['cluster'] = clusters.clusters;
+    return df;
+}
+
+// Calculate cosine similarity between tasks (Content-Based)
+function calculateSimilarity(matrix) {
+    const similarity = [];
+    for (let i = 0; i < matrix.length; i++) {
+        const row = [];
+        for (let j = 0; j < matrix.length; j++) {
+            row.push(cosineSimilarity(matrix[i], matrix[j]));
+        }
+        similarity.push(row);
+    }
+    return similarity;
+}
+
+// Hybrid recommendation
+function hybridRecommendTasks(userId, userSimilarity, taskSimilarity, userTaskMatrix, n_recommendations = 5, alpha = 0.5) {
+    const similarUsers = userSimilarity[userId].sort((a, b) => b - a);
+    const userRatings = userTaskMatrix[userId];
+    const taskSimScores = taskSimilarity.map(row => row.reduce((a, b) => a + b * userRatings[row.indexOf(b)], 0));
+    const hybridScores = taskSimScores.map((score, idx) => alpha * score + (1 - alpha) * userRatings.reduce((a, b) => a + b * similarUsers[idx], 0));
+    const recommendations = hybridScores.map((score, idx) => ({ task: idx, score })).sort((a, b) => b.score - a.score).slice(0, n_recommendations);
+    
+    return recommendations.map(rec => rec.task);
+}
+
+// Evaluation function
+function evaluateRecommendations(userTaskMatrix, hybridRecommendTasks) {
+    const y_true = [];
+    const y_pred = [];
+
+    for (let userId in userTaskMatrix) {
+        const actualTasks = Object.keys(userTaskMatrix[userId]).filter(taskId => userTaskMatrix[userId][taskId] > 0);
+        const recommendedTasks = hybridRecommendTasks(userId, actualTasks.length);
+
+        y_true.push(...Array(actualTasks.length).fill(1));
+        y_true.push(...Array(userTaskMatrix.length - actualTasks.length).fill(0));
+
+        for (let taskId in userTaskMatrix) {
+            y_pred.push(recommendedTasks.includes(taskId) ? 1 : 0);
+        }
+    }
+
+    const precision = y_true.filter((v, i) => v === 1 && y_pred[i] === 1).length / y_true.filter(v => v === 1).length;
+    const recall = y_true.filter((v, i) => v === 1 && y_pred[i] === 1).length / y_pred.filter(v => v === 1).length;
+    const f1 = 2 * (precision * recall) / (precision + recall);
+    const mae = y_true.map((v, i) => Math.abs(v - y_pred[i])).reduce((a, b) => a + b, 0) / y_true.length;
+
+    console.log(`Precision: ${precision.toFixed(4)}, Recall: ${recall.toFixed(4)}, F1 Score: ${f1.toFixed(4)}, MAE: ${mae.toFixed(4)}`);
+}
+
+// Main function
+(async function main() {
+    const { tasks, users, userTasks } = await loadData();
+    const mergedDF = mergeDataframes(userTasks, users, tasks);
+    const categorizedUsersDF = categorizeUsers(mergedDF);
+    const features = ['age', 'tasks_viewed', 'tasks_completed', 'tasks_completed_easy', 'tasks_completed_medium', 'tasks_completed_hard', 'average_rating', 'avg_time_per_task'];
+    const standardizedDF = standardizeFeatures(categorizedUsersDF, features);
+    const clusteredDF = clusterUsers(standardizedDF, features, 5);
+
+    // Handle duplicates by averaging the ratings for each (user_id, task_id) pair
+    const userTaskAggregated = userTasks.reduce((acc, curr) => {
+        const key = `${curr.user_id}-${curr.task_id}`;
+        if (!acc[key]) acc[key] = { ...curr, count: 0 };
+        acc[key].rating += curr.rating;
+        acc[key].count += 1;
+        return acc;
+    }, {});
+
+    for (let key in userTaskAggregated) {
+        userTaskAggregated[key].rating /= userTaskAggregated[key].count;
+    }
+
+    // Create user-task matrix
+    const userTaskMatrix = {};
+    for (let key in userTaskAggregated) {
+        const { user_id, task_id, rating } = userTaskAggregated[key];
+        if (!userTaskMatrix[user_id]) userTaskMatrix[user_id] = {};
+        userTaskMatrix[user_id][task_id] = rating;
+    }
+
+    // Calculate cosine similarities
+    const taskSimilarity = calculateSimilarity(Object.values(userTaskMatrix).map(row => Object.values(row)));
+    const userSimilarity = calculateSimilarity(Object.values(userTaskMatrix));
+
+    // Example usage
+    const userId = 1;
+    const recommendedTasks = hybridRecommendTasks(userId, userSimilarity, taskSimilarity, userTaskMatrix);
+    console.log(`Recommended tasks for user ${userId}: ${recommendedTasks}`);
+
+    // Evaluate recommendations
+    evaluateRecommendations(userTaskMatrix, (userId, n) => hybridRecommendTasks(userId, userSimilarity, taskSimilarity, userTaskMatrix, n));
+})();
