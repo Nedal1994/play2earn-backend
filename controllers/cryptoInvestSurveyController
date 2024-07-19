@@ -1,0 +1,116 @@
+// const CryptoSurvey = require('../models/cryptoSurvey');
+
+// // Create a new survey entry
+// exports.createSurvey = async (req, res) => {
+//     const user_id = req.user._id;  // Assuming user ID is attached to req.user by authentication middleware
+//     const { name, age, email, country_of_residence, nationality, income_level, knowledge_level, primary_source_of_info, own_crypto, owned_cryptos, frequency_of_transactions, trading_platforms, benefits_of_crypto, involvement_duration, investment_factors, adoption_barriers, investment_reason, main_concerns, monthly_investment, price_check_frequency, illegal_activities_concern, investment_risk_perception, investment_security_concern, experienced_issues, preferred_security_measures, plan_to_increase_investment, influencing_factors, metaverse_impact, future_of_finance, additional_comments } = req.body;
+
+//     try {
+//         const newSurvey = new CryptoSurvey({
+//             user_id, 
+//             name, 
+//             age, 
+//             email, 
+//             country_of_residence, 
+//             nationality, 
+//             income_level, 
+//             knowledge_level, 
+//             primary_source_of_info, 
+//             own_crypto, 
+//             owned_cryptos, 
+//             frequency_of_transactions, 
+//             trading_platforms, 
+//             benefits_of_crypto, 
+//             involvement_duration, 
+//             investment_factors, 
+//             adoption_barriers, 
+//             investment_reason, 
+//             main_concerns, 
+//             monthly_investment, 
+//             price_check_frequency, 
+//             illegal_activities_concern, 
+//             investment_risk_perception, 
+//             investment_security_concern, 
+//             experienced_issues, 
+//             preferred_security_measures, 
+//             plan_to_increase_investment, 
+//             influencing_factors, 
+//             metaverse_impact, 
+//             future_of_finance, 
+//             additional_comments
+//         });
+
+//         await newSurvey.save();
+//         res.status(201).json(newSurvey);
+//     } catch (error) {
+//         res.status(400).json({ error: error.message });
+//     }
+// };
+
+// // Get all survey entries
+// exports.getAllSurveys = async (req, res) => {
+//     try {
+//         const surveys = await CryptoSurvey.find();
+//         res.status(200).json(surveys);
+//     } catch (error) {
+//         res.status(400).json({ error: error.message });
+//     }
+// };
+
+// // Get a specific survey entry
+// exports.getSurveyById = async (req, res) => {
+//     const { id } = req.params;
+
+//     try {
+//         const survey = await CryptoSurvey.findById(id);
+//         if (!survey) {
+//             return res.status(404).json({ error: 'Survey not found' });
+//         }
+//         res.status(200).json(survey);
+//     } catch (error) {
+//         res.status(400).json({ error: error.message });
+//     }
+// };
+
+// // Update a survey entry
+// exports.updateSurvey = async (req, res) => {
+//     const { id } = req.params;
+//     const updateData = req.body;
+
+//     try {
+//         const survey = await CryptoSurvey.findByIdAndUpdate(id, updateData, { new: true });
+//         if (!survey) {
+//             return res.status(404).json({ error: 'Survey not found' });
+//         }
+//         res.status(200).json({ message: 'Survey updated successfully', survey });
+//     } catch (error) {
+//         res.status(400).json({ error: error.message });
+//     }
+// };
+
+// // Delete a survey entry
+// exports.deleteSurvey = async (req, res) => {
+//     const { id } = req.params;
+
+//     try {
+//         const survey = await CryptoSurvey.findByIdAndDelete(id);
+//         if (!survey) {
+//             return res.status(404).json({ error: 'Survey not found' });
+//         }
+//         res.status(200).json({ message: 'Survey deleted successfully' });
+//     } catch (error) {
+//         res.status(400).json({ error: error.message });
+//     }
+// };
+
+// // Bulk delete survey entries
+// exports.bulkDeleteSurveys = async (req, res) => {
+//     const { ids } = req.body;
+
+//     try {
+//         await CryptoSurvey.deleteMany({ _id: { $in: ids } });
+//         res.status(200).json({ message: 'Surveys deleted successfully' });
+//     } catch (error) {
+//         res.status(400).json({ error: error.message });
+//     }
+// };
