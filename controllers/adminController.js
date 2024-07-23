@@ -1,4 +1,7 @@
 const Admin = require('../models/admin');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 // Get Admin Profile
 exports.getAdminProfile = async (req, res) => {
@@ -16,7 +19,7 @@ exports.getAdminProfile = async (req, res) => {
 // Update Admin Profile
 exports.updateAdminProfile = async (req, res) => {
     const updates = Object.keys(req.body);
-    const allowedUpdates = ['username', 'email', 'password', 'profile_pic_url']; // Add other fields as necessary
+    const allowedUpdates = ['username', 'email', 'password', 'profile_pic_url'];
     const isValidOperation = updates.every(update => allowedUpdates.includes(update));
 
     if (!isValidOperation) {
@@ -36,5 +39,73 @@ exports.updateAdminProfile = async (req, res) => {
         res.json(admin);
     } catch (error) {
         res.status(400).json({ error: error.message });
+    }
+};
+
+// Request Password Reset
+exports.requestPasswordReset = async (req, res) => {
+    try {
+        const admin = await Admin.findOne({ email: req.body.email });
+        if (!admin) {
+            return res.status(404).json({ error: 'Admin not found' });
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        admin.resetPasswordToken = token;
+        admin.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+
+        await admin.save();
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL,
+                pass: process.env.EMAIL_PASSWORD
+            }
+        });
+
+        const mailOptions = {
+            to: admin.email,
+            from: process.env.EMAIL,
+            subject: 'Password Reset',
+            text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+            Please click on the following link, or paste this into your browser to complete the process:\n\n
+            http://localhost:3000/reset/${token}\n\n
+            If you did not request this, please ignore this email and your password will remain unchanged.\n`
+        };
+
+        transporter.sendMail(mailOptions, (err, response) => {
+            if (err) {
+                console.error('Failed to send email:', err);
+                return res.status(500).json({ error: 'Failed to send email' });
+            } else {
+                return res.status(200).json({ message: 'Password reset email sent' });
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Reset Password
+exports.resetPassword = async (req, res) => {
+    try {
+        const admin = await Admin.findOne({
+            resetPasswordToken: req.params.token,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!admin) {
+            return res.status(400).json({ error: 'Password reset token is invalid or has expired' });
+        }
+
+        await admin.setPassword(req.body.password);
+        admin.resetPasswordToken = undefined;
+        admin.resetPasswordExpires = undefined;
+
+        await admin.save();
+        res.status(200).json({ message: 'Password has been reset' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 };

@@ -1,98 +1,34 @@
+const User = require('../models/user'); // Ensure this path is correct
 const bcrypt = require('bcryptjs');
-// const jwt = require('jsonwebtoken')
-const Admin = require('../models/admin');
-const User = require('../models/user');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
-// const JWT_SECRET = process.env.JWT_SECRET; //uncomment it later (for jwt)
-
-// Register User
-exports.registerUser = async (req, res) => {
-    const { username, email, password, profile_pic_url } = req.body;
-
+exports.register = async (req, res) => {
     try {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newUser = new User({
-            username,
-            email,
-            password: hashedPassword,
-            profile_pic_url,
-            tasks_completed: 0,
-            total_rewards: 0
-        });
-
-        await newUser.save();
-        res.status(201).json(newUser);
+        const { username, email, password } = req.body;
+        const user = new User({ username, email, password });
+        user.password = await bcrypt.hash(password, 10);
+        await user.save();
+        res.status(201).json({ message: 'User registered successfully', user });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 };
 
-// Register Admin
-exports.registerAdmin = async (req, res) => {
-    const { username, email, password, profile_pic_url } = req.body;
-
+exports.login = async (req, res) => {
     try {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newAdmin = new Admin({
-            username,
-            email,
-            password: hashedPassword,
-            profile_pic_url
-        });
-
-        await newAdmin.save();
-        res.status(201).json(newAdmin);
+        const { username, password } = req.body;
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Invalid credentials' });
+        }
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        res.status(200).json({ token, user });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
-};
-
-// Login User
-exports.loginUser = async (req, res) => {
-    const { email, password } = req.body;
-
-    try {
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ error: 'Email or password is wrong' });
-    
-        const validPass = await bcrypt.compare(password, user.password);
-        if (!validPass) return res.status(400).json({ error: 'Email or password is wrong' });
-    
-        // const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '1h' }); //jwt uncomment later
-        // res.header('auth-token', token).json({ token });
-        res.json({ message: 'Login successful', user }); 
-        // res.json({ message: 'Login successful', token }); //uncomment it later (for token)
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
-
-// Login Admin
-exports.loginAdmin = async (req, res) => {
-    const { email, password } = req.body;
-
-    try {
-        const admin = await Admin.findOne({ email });
-        if (!admin) return res.status(400).json({ error: 'Email or password is wrong' });
-    
-        const validPass = await bcrypt.compare(password, admin.password);
-        if (!validPass) return res.status(400).json({ error: 'Email or password is wrong' });
-
-        // const token = jwt.sign({ _id: admin._id }, JWT_SECRET, { expiresIn: '1h' }); //jwt uncomment later
-        // res.header('auth-token', token).json({ token });
-        res.json({ message: 'Login successful', admin }); 
-        // res.json({ message: 'Login successful', token }); //uncomment it later (for token)
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
-
-// Logout (No JWT verification)
-exports.logout = async (req, res) => {
-    //add anything required later
-    res.json({ message: 'Logout successful' });
 };
