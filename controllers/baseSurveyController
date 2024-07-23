@@ -1,0 +1,80 @@
+const mongoose = require('mongoose');
+
+// Create a new survey response
+exports.createSurvey = (Model) => async (req, res) => {
+    try {
+        const newSurvey = new Model(req.body);
+        const savedSurvey = await newSurvey.save();
+        res.status(201).json(savedSurvey);
+    } catch (error) {
+        console.error('Error creating survey:', error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+// Get all survey responses
+exports.getAllSurveys = (Model) => async (req, res) => {
+    try {
+        const surveys = await Model.find();
+        res.status(200).json(surveys);
+    } catch (error) {
+        console.error('Error getting surveys:', error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+// Get a survey response by ID
+exports.getSurveyById = (Model) => async (req, res) => {
+    try {
+        const survey = await Model.findById(req.params.id);
+        if (!survey) {
+            return res.status(404).json({ message: 'Survey not found.' });
+        }
+        res.status(200).json(survey);
+    } catch (error) {
+        console.error('Error getting survey:', error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+// Delete a survey response
+exports.deleteSurvey = (Model) => async (req, res) => {
+    try {
+        const survey = await Model.findByIdAndDelete(req.params.id);
+        if (!survey) {
+            return res.status(404).json({ message: 'Survey not found.' });
+        }
+        res.status(200).json({ message: 'Survey deleted successfully.' });
+    } catch (error) {
+        console.error('Error deleting survey:', error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+// Bulk delete survey entries
+exports.bulkDeleteSurveys = (Model) => async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || !ids.length) {
+            return res.status(400).json({ message: 'Invalid input. Provide an array of IDs.' });
+        }
+
+        // Find all surveys that match the provided IDs
+        const existingSurveys = await Model.find({ _id: { $in: ids } });
+        const existingSurveyIds = existingSurveys.map(survey => survey._id.toString());
+
+        // Check if there are any IDs that do not exist
+        const nonExistentIds = ids.filter(id => !existingSurveyIds.includes(id));
+        if (nonExistentIds.length) {
+            return res.status(404).json({ message: `Surveys not found for IDs: ${nonExistentIds.join(', ')}` });
+        }
+
+        // Delete surveys that exist
+        await Model.deleteMany({ _id: { $in: ids } });
+
+        res.status(200).json({ message: 'Surveys deleted successfully.' });
+    } catch (error) {
+        console.error('Error deleting surveys:', error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+};
