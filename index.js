@@ -1,14 +1,13 @@
-require('dotenv').config();
-
-console.log('JWT_SECRET:', process.env.JWT_SECRET);  // Add this line for debugging
-
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes');
-const taskRoutes = require('./routes/taskRoutes');
+// const taskRoutes = require('./routes/taskRoutes'); // Comment this out or remove
+
+dotenv.config();
 
 const server = express();
 
@@ -19,7 +18,7 @@ server.use(bodyParser.json());
 server.use('/api/auth', authRoutes);
 server.use('/api/admin', adminRoutes);
 server.use('/api/users', userRoutes);
-server.use('/api/tasks', taskRoutes);
+// server.use('/api/tasks', taskRoutes); // Comment this out or remove
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
