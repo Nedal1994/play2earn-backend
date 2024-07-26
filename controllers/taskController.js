@@ -1,15 +1,49 @@
+// controllers/taskController.js
 const Task = require('../models/Task');
 
 // Create a new task
 exports.createTask = async (req, res) => {
-    const { title, description, reward } = req.body;
+    const { title, description, type, status, difficulty_level, points, reward } = req.body;
 
     try {
-        const task = new Task({title, description, reward});
+        const task = new Task({ title, description, type, status, difficulty_level, points, reward });
         await task.save();
         res.status(201).json({ message: 'Task created successfully', task });
     } catch (error) {
         res.status(400).json({ error: error.message });
+    }
+};
+
+// Participate in a task
+exports.participateInTask = async (req, res) => {
+    try {
+        const task = await Task.findById(req.params.id);
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        if (!task.participants.includes(req.user.id)) {
+            task.participants.push(req.user.id);
+            await task.save();
+        }
+        res.json({ message: 'Participated in task', task });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Complete a task
+exports.completeTask = async (req, res) => {
+    try {
+        const task = await Task.findById(req.params.id);
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        task.status = 'completed';
+        task.completedBy = req.user.id;
+        await task.save();
+        res.json({ message: 'Task completed', pointsAwarded: task.points, reward: task.reward });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
@@ -23,7 +57,51 @@ exports.getAllTasks = async (req, res) => {
     }
 };
 
-//Get a task
+// Get all tasks of type 'game' with optional pagination
+exports.getGameTasks = async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
+
+    try {
+        const tasks = await Task.find({ type: 'game' })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+        const totalTasks = await Task.countDocuments({ type: 'game' });
+
+        res.json({
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalTasks,
+            totalPages: Math.ceil(totalTasks / limit),
+            tasks
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Get all tasks of type 'participating' with optional pagination
+exports.getParticipatingTasks = async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
+
+    try {
+        const tasks = await Task.find({ type: 'participating' })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+        const totalTasks = await Task.countDocuments({ type: 'participating' });
+
+        res.json({
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalTasks,
+            totalPages: Math.ceil(totalTasks / limit),
+            tasks
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Get a task
 exports.getTask = async (req, res) => {
     const { id } = req.params;
 
@@ -38,15 +116,25 @@ exports.getTask = async (req, res) => {
     }
 };
 
+// Get task progress
+exports.getTaskProgress = async (req, res) => {
+    try {
+        const progress = { completionPercentage: 75, pointsEarned: 100 }; // Example data
+        res.json(progress);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 // Update a task
 exports.updateTask = async (req, res) => {
     const { id } = req.params;
-    const { title, description, reward } = req.body;
+    const { title, description, type, status, difficulty_level, points, reward } = req.body;
 
     try {
         const task = await Task.findByIdAndUpdate(
             id,
-            { title, description, reward },
+            { title, description, type, status, difficulty_level, points, reward },
             { new: true }
         );
 

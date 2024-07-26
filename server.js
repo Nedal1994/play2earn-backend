@@ -7,6 +7,10 @@ const taskRoutes = require('./routes/taskRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes');
 const surveyRoutes = require('./routes/surveyRoutes');
+const aiContributionRoutes = require('./routes/aiContributionRoutes');
+const earningRoutes = require('./routes/earningRoutes');
+const socialAccountRoutes = require('./routes/socialAccountRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
 const bodyParser = require('body-parser');
 
 dotenv.config();
@@ -22,6 +26,10 @@ server.use('/api/tasks', taskRoutes);
 server.use('/api/admin', adminRoutes);
 server.use('/api/users', userRoutes);
 server.use('/api/surveys', surveyRoutes);
+server.use('/api/aicontributions', aiContributionRoutes)
+server.use('/api/earnings', earningRoutes);
+server.use('/api/social-accounts', socialAccountRoutes);
+server.use('/api/transactions', transactionRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {

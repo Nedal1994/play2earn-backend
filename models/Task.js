@@ -9,6 +9,25 @@ const taskSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    type: {
+        type: String,
+        required: true,
+        enum: ['game', 'participating'],
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'in-progress', 'completed'], 
+        default: 'pending' 
+    },
+    difficulty_level: {
+        type: String,
+        enum: ['easy', 'medium', 'hard'],
+        required: true,
+    },
+    points: {
+        type: Number,
+        required: true
+    },
     reward: {
         type: Number,
         required: true,
