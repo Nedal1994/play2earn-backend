@@ -11,6 +11,8 @@ const aiContributionRoutes = require('./routes/aiContributionRoutes');
 const earningRoutes = require('./routes/earningRoutes');
 const socialAccountRoutes = require('./routes/socialAccountRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
+const recommendationRoutes = require('./routes/recommendationRoutes');
+
 const bodyParser = require('body-parser');
 
 dotenv.config();
@@ -30,6 +32,7 @@ server.use('/api/aicontributions', aiContributionRoutes)
 server.use('/api/earnings', earningRoutes);
 server.use('/api/social-accounts', socialAccountRoutes);
 server.use('/api/transactions', transactionRoutes);
+server.use('/api/recommendations', recommendationRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
