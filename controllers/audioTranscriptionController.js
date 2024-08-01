@@ -68,7 +68,6 @@ exports.submitTranscription = async (req, res) => {
 
         // Return the result and points awarded
         res.status(200).json({
-            // isCorrect,
             pointsAwarded: isCorrect ? points : 0,
             message: isCorrect ? 'Correct transcription!' : 'Incorrect transcription.'
         });
