@@ -12,6 +12,7 @@ const earningRoutes = require('./routes/earningRoutes');
 const socialAccountRoutes = require('./routes/socialAccountRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
+const audioTranscriptionRoutes = require('./routes/audioTranscriptionRoutes');
 
 const bodyParser = require('body-parser');
 
@@ -33,6 +34,7 @@ server.use('/api/earnings', earningRoutes);
 server.use('/api/social-accounts', socialAccountRoutes);
 server.use('/api/transactions', transactionRoutes);
 server.use('/api/recommendations', recommendationRoutes);
+server.use('/api/audio-transcription', audioTranscriptionRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
