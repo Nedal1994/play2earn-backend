@@ -19,6 +19,9 @@
     "cors": "^2.8.5",
     "debug": "^2.6.9",
     "define-property": "^1.0.0",
+    "define-data-property": "^1.1.4",
+    "depd": "^2.0.0",
+    "destroy": "^1.2.0",
     "dotenv": "^16.4.5",
     "ecdsa-sig-formatter": "^1.0.11",
     "ee-first": "^1.1.1",
@@ -107,4 +110,3 @@
   "author": "",
   "license": "ISC"
 }
-
