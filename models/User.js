@@ -22,6 +22,14 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: null,
     },
+    tasks_completed: {
+        type: Number,
+        default: 0,
+    },
+    total_rewards: {
+        type: Number,
+        default: 0,
+    },
     resetPasswordToken: {
         type: String,
         default: null,
