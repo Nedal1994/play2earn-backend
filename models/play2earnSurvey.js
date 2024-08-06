@@ -1,13 +1,7 @@
 const mongoose = require('mongoose');
 
 const play2earnSurveySchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    name: { type: String, required: true },
-    age: { type: String, required: true },
-    email: { type: String, required: true },
-    country_of_residence: { type: String, required: true },
-    nationality: { type: String, required: true },
-    income_level: { type: String, required: true },
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     familiar_with_play2earn: { type: String, required: true },
     played_play2earn_games: { type: String, required: true },
     games_played: { type: String, required: true },

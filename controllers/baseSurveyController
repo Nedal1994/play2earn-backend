@@ -1,8 +1,24 @@
-const mongoose = require('mongoose');
+const UserDetailSurvey = require('../models/userDetailSurvey');
 
-// Create a new survey response
+// Create a new survey response (with user detail check and one-time submission check)
 exports.createSurvey = (Model) => async (req, res) => {
     try {
+        // Check if the user has completed the user detail survey
+        const userDetail = await UserDetailSurvey.findOne({ user_id: req.body.user_id });
+        if (!userDetail) {
+            return res.status(400).json({
+                message: 'User details not found. Please fill out the user details survey first.',
+                redirectTo: 'api/surveys/user-detail-survey/create'  // This can be used on the frontend to redirect the user
+            });
+        }
+
+        // Check if the user has already submitted this survey
+        const existingSurvey = await Model.findOne({ user_id: req.body.user_id });
+        if (existingSurvey) {
+            return res.status(400).json({ message: 'You have already submitted this survey.' });
+        }
+
+        // If no prior submission, proceed with creating the survey
         const newSurvey = new Model(req.body);
         const savedSurvey = await newSurvey.save();
         res.status(201).json(savedSurvey);
@@ -70,7 +86,7 @@ exports.bulkDeleteSurveys = (Model) => async (req, res) => {
         }
 
         // Delete surveys that exist
-        await Model.deleteMany({ _id: { $in: ids } });
+        await Model.deleteMany({ _id: { $in: existingSurveyIds } });
 
         res.status(200).json({ message: 'Surveys deleted successfully.' });
     } catch (error) {

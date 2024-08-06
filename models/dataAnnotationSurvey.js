@@ -1,13 +1,7 @@
 const mongoose = require('mongoose');
 
 const dataAnnotationSurveySchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    name: { type: String, required: true },
-    age: { type: String, required: true },
-    email: { type: String, required: true },
-    country_of_residence: { type: String, required: true },
-    nationality: { type: String, required: true },
-    income_level: { type: String, required: true },
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     task_preference: { type: String, required: true },
     time_spent_per_task: { type: String, required: true },
     task_repetition_preference: { type: String, required: true },

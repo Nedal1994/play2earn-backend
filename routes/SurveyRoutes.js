@@ -6,6 +6,11 @@ const cryptoSurveyController = require('../controllers/cryptoSurveyController');
 const aiSurveyController = require('../controllers/aiSurveyController');
 const dataAnnotationSurveyController = require('../controllers/dataAnnotationSurveyController');
 const play2earnSurveyController = require('../controllers/play2EarnSurveyController');
+const userDetailSurveyController = require('../controllers/userDetailSurveyController');
+
+// User detail survey routes
+router.post('/user-detail-survey', userDetailSurveyController.createUserDetailSurvey);
+router.get('/user-detail-survey/:id', userDetailSurveyController.getUserDetailSurvey);
 
 router.post('/cryptoSurvey/create', cryptoSurveyController.createSurvey);
 router.get('/cryptoSurvey/', cryptoSurveyController.getAllSurveys);

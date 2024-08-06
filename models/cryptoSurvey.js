@@ -4,33 +4,8 @@ const cryptoSurveySchema = new mongoose.Schema({
     user_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
-    },
-    name: {
-        type: String,
-        required: true
-    },
-    age: {
-        type: String,
-        enum: ['18 - 24', '25 - 34', '35 - 44', '44 - 55', '55 - above'],
-        required: true
-    },
-    email: {
-        type: String,
-        required: true
-    },
-    country_of_residence: {
-        type: String,
-        required: true
-    },
-    nationality: {
-        type: String,
-        required: true
-    },
-    income_level: {
-        type: String,
-        enum: ['$0 - $20,000', '$20,000 - $50,000', '$50,000 - $100,000', '$100,000 - above'],
-        required: true
+        required: true,
+        unique: true
     },
     knowledge_level: {
         type: String,

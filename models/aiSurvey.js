@@ -1,13 +1,7 @@
 const mongoose = require('mongoose');
 
 const aiSurveySchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    name: { type: String, required: true },
-    age: { type: String, required: true },
-    email: { type: String, required: true },
-    country_of_residence: { type: String, required: true },
-    nationality: { type: String, required: true },
-    income_level: { type: String, required: true },
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     familiar_with_ai: { type: String, required: true },
     participated_in_ai_tasks: { type: String, required: true },
     topics_of_interest: { type: [String], required: true },
