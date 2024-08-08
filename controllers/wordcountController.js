@@ -46,6 +46,7 @@ const getParagraphs = async (req, res) => {
   }
 };
 
+//Controller to submit answer 
   const submitAnswer = async (req, res) => {
   const { id } = req.params; // Extract id from route parameters
   const { word1count, word2count } = req.body; // Extract counts from request body
