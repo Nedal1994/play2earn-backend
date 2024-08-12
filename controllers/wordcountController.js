@@ -46,13 +46,13 @@ const getParagraphs = async (req, res) => {
   }
 };
 
-//Controller to submit answer 
-  const submitAnswer = async (req, res) => {
+// Controller to submit an answer
+const submitAnswer = async (req, res) => {
   const { id } = req.params; // Extract id from route parameters
   const { word1count, word2count } = req.body; // Extract counts from request body
 
   // Validate input
-  if (typeof word1count !== 'number' || (req.body.level === 3 && typeof word2count !== 'number')) {
+  if (typeof word1count !== 'number' || (word2count !== undefined && typeof word2count !== 'number')) {
     return res.status(400).json({ message: 'Invalid input' });
   }
 
@@ -67,7 +67,7 @@ const getParagraphs = async (req, res) => {
     // Compare user's answer with correct values
     const correctWord1Count = paragraph.word1count;
     const correctWord2Count = paragraph.word2count || 0;
-    const isCorrect = word1count === correctWord1Count && (word2count === correctWord2Count || req.body.level < 3);
+    const isCorrect = word1count === correctWord1Count && (word2count === correctWord2Count || !paragraph.word2count);
 
     // Respond with result and points
     res.json({
@@ -80,6 +80,5 @@ const getParagraphs = async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
-
 
 module.exports = { getParagraphs, submitAnswer, createParagraph };
