@@ -1,8 +1,11 @@
-const express = require('express');
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
 const dotenv = require('dotenv');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
+const passwordRoutes = require("./routes/passwordRoutes");
 const authRoutes = require('./routes/authRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -14,9 +17,7 @@ const socialAccountRoutes = require('./routes/socialAccountRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
 const audioTranscriptionRoutes = require('./routes/audioTranscriptionRoutes');
-const wordcountRoutes = require('./routes/wordcountRoutes');
-
-const connectDB = require('./config/db');
+const leaderboardRoutes = require('./routes/leaderboardRoutes');
 
 dotenv.config();
 
@@ -34,6 +35,11 @@ server.use(bodyParser.json()); // Parse JSON bodies
 connectDB();
 
 // Define Routes
+server.use(bodyParser.json());
+server.use(cors()); // Allow any origin for now
+
+// Routes
+server.use('/api/password', passwordRoutes);
 server.use('/api/auth', authRoutes);
 server.use('/api/tasks', taskRoutes);
 server.use('/api/admin', adminRoutes);
@@ -45,7 +51,19 @@ server.use('/api/social-accounts', socialAccountRoutes);
 server.use('/api/transactions', transactionRoutes);
 server.use('/api/recommendations', recommendationRoutes);
 server.use('/api/audio-transcription', audioTranscriptionRoutes);
-server.use('/api/wordcount', wordcountRoutes);
+server.use('/api/leaderboard', leaderboardRoutes);
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+    .then(() => {
+        console.log('Connected to MongoDB');
+    })
+    .catch(err => {
+        console.error('Error connecting to MongoDB', err);
+    });
 
 // Error Handling Middleware
 server.use((err, req, res, next) => {
