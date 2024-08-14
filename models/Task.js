@@ -20,9 +20,10 @@ const taskSchema = new mongoose.Schema({
         default: 'pending' 
     },
     difficulty_level: {
-        type: String,
-        enum: ['easy', 'medium', 'hard'],
+        type: Number,
         required: true,
+        min: 1,
+        max: 10
     },
     points: {
         type: Number,
