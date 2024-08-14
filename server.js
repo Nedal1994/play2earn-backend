@@ -2,91 +2,57 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const path = require('path');
 
-const app = express();
-const PORT = 5000;
+
+
+
+
+const captchaRoutes = require('./routes/captchaRoutes');  // Import CAPTCHA routes
+
+const server = express();
 
 // Middleware
-app.use(bodyParser.json());
-app.use(cors());
-app.use(express.static(path.join(__dirname, 'public'))); // Serve static files
+server.use(cors({
+    origin: ['http://localhost:5173', 'http://192.168.0.26:3000', 'http://localhost:3000'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+}));
+server.use(bodyParser.json());
 
-// MongoDB connection
-mongoose.connect('mongodb+srv://sadhunitish:RKPnAJKCQMK2A6Vd@cluster0.ms0bxut.mongodb.net/captcha_database?retryWrites=true&w=majority', {
+
+
+// CAPTCHA MongoDB Connection
+const captchaConnection = mongoose.createConnection('mongodb+srv://sadhunitish:RKPnAJKCQMK2A6Vd@cluster0.ms0bxut.mongodb.net/captcha_database?retryWrites=true&w=majority', {
     useNewUrlParser: true,
     useUnifiedTopology: true
-}).then(() => {
-    console.log('Connected to MongoDB');
-}).catch(err => {
-    console.error('Error connecting to MongoDB', err);
 });
 
-// Schema definitions
-const audioCaptchaSchema = new mongoose.Schema({
-    level: String,
-    answer: String,
-    url: String
-}, { collection: 'captcha_audio' });
-
-const textCaptchaSchema = new mongoose.Schema({
-    level: String,
-    answer: String,
-    url: String
-}, { collection: 'captcha_text' });
-
-const imageCaptchaSchema = new mongoose.Schema({
-    level: String,
-    question: String,
-    options: Array
-}, { collection: 'captcha_images' });
-
-// Models
-const AudioCaptcha = mongoose.model('AudioCaptcha', audioCaptchaSchema);
-const TextCaptcha = mongoose.model('TextCaptcha', textCaptchaSchema);
-const ImageCaptcha = mongoose.model('ImageCaptcha', imageCaptchaSchema);
-
-// Routes
-app.get('/api/captcha/audio/:level', async (req, res) => {
-    const { level } = req.params;
-    console.log(`Fetching audio captchas for level: ${level}`);
-    try {
-        const captchas = await AudioCaptcha.find({ level });
-        console.log('Fetched audio captchas:', captchas);
-        res.json(captchas);
-    } catch (error) {
-        console.error('Error fetching audio captchas:', error);
-        res.status(500).send('Error fetching audio captchas');
-    }
+captchaConnection.on('connected', () => {
+    // Successfully connected to CAPTCHA MongoDB
 });
 
-app.get('/api/captcha/text/:level', async (req, res) => {
-    const { level } = req.params;
-    console.log(`Fetching text captchas for level: ${level}`);
-    try {
-        const captchas = await TextCaptcha.find({ level });
-        console.log('Fetched text captchas:', captchas);
-        res.json(captchas);
-    } catch (error) {
-        console.error('Error fetching text captchas:', error);
-        res.status(500).send('Error fetching text captchas');
-    }
+captchaConnection.on('error', (err) => {
+    // Handle the error without logging
 });
 
-app.get('/api/captcha/image/:level', async (req, res) => {
-    const { level } = req.params;
-    console.log(`Fetching image captchas for level: ${level}`);
-    try {
-        const captchas = await ImageCaptcha.find({ level });
-        console.log('Fetched image captchas:', captchas);
-        res.json(captchas);
-    } catch (error) {
-        console.error('Error fetching image captchas:', error);
-        res.status(500).send('Error fetching image captchas');
-    }
+
+server.use('/api/captcha', captchaRoutes); // Add CAPTCHA routes
+
+// Error Handling Middleware
+server.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Something went wrong!' });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+// 404 Middleware
+server.use((req, res, next) => {
+    res.status(404).json({ message: 'Route not found' });
 });
+
+// Start the Server
+const PORT = process.env.PORT || 5001;
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Export the captchaConnection for use in models
+module.exports = { captchaConnection };
+
