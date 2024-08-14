@@ -5,6 +5,10 @@ const Task = require('../models/Task');
 exports.createTask = async (req, res) => {
     const { title, description, type, status, difficulty_level, points, reward } = req.body;
 
+    if (difficulty_level < 1 || difficulty_level > 10) {
+        return res.status(400).json({ error: 'Difficulty level must be between 1 and 10' });
+    }
+
     try {
         const task = new Task({ title, description, type, status, difficulty_level, points, reward });
         await task.save();
