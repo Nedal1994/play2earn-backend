@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
-const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
 const taskRoutes = require('./routes/taskRoutes');
@@ -25,17 +24,12 @@ dotenv.config();
 const server = express();
 
 // Middleware
-<<<<<<< HEAD
-server.use(bodyParser.json());
-server.use(cors()); // Enable CORS for all origins
-=======
 server.use(cors({
-  origin: 'http://localhost:5173', // Allow requests from your frontend URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Define allowed methods
-  credentials: true, // Allow credentials like cookies to be sent
+    origin: ['http://localhost:5173', 'http://192.168.0.26:3000'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Define allowed methods
+    credentials: true, // Allow credentials like cookies to be sent
 }));
 server.use(bodyParser.json()); // Parse JSON bodies
->>>>>>> 118607403fdc49fa8b0dbec5d9f9c0d036f3d7ff
 
 // Routes
 server.use('/api/auth', authRoutes);
@@ -55,7 +49,6 @@ server.use('/api/password', passwordRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
-<<<<<<< HEAD
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
@@ -65,30 +58,18 @@ mongoose.connect(process.env.MONGO_URI, {
     .catch(err => {
         console.error('Error connecting to MongoDB', err);
     });
-=======
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => {
-  console.log('Connected to MongoDB');
-})
-.catch(err => {
-  console.error('Error connecting to MongoDB', err);
-});
->>>>>>> 118607403fdc49fa8b0dbec5d9f9c0d036f3d7ff
 
 // Error Handling Middleware
 server.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+    console.error(err.stack);
+    res.status(500).json({ message: 'Something went wrong!' });
 });
 
 // 404 Middleware
 server.use((req, res, next) => {
-  res.status(404).json({ message: 'Route not found' });
+    res.status(404).json({ message: 'Route not found' });
 });
 
 // Start the Server
 const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
