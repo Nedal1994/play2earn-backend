@@ -25,7 +25,7 @@ const server = express();
 
 // Middleware
 server.use(cors({
-    origin: ['http://localhost:5173', 'http://192.168.0.26:3000'],
+    origin: ['http://localhost:5173', 'http://192.168.0.26:3000', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Define allowed methods
     credentials: true, // Allow credentials like cookies to be sent
 }));
