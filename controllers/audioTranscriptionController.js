@@ -124,14 +124,11 @@ exports.submitTranscription = async (req, res) => {
         const points = isCorrect ? task.points : 0;
 
         res.status(200).json({
-<<<<<<< HEAD
             isCorrect,
             points,
             message: isCorrect ? 'Correct!' : 'Try again!',
-=======
             pointsAwarded: isCorrect ? points : 0,
             message: isCorrect ? 'Correct transcription!' : 'Incorrect transcription.'
->>>>>>> 118607403fdc49fa8b0dbec5d9f9c0d036f3d7ff
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
