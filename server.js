@@ -17,6 +17,7 @@ const recommendationRoutes = require('./routes/recommendationRoutes');
 const audioTranscriptionRoutes = require('./routes/audioTranscriptionRoutes');
 const wordcountRoutes = require('./routes/wordcountRoutes');
 const leaderboardRoutes = require('./routes/leaderboardRoutes');
+const passwordRoutes = require('./routes/passwordRoutes');
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ server.use('/api/recommendations', recommendationRoutes);
 server.use('/api/audio-transcription', audioTranscriptionRoutes);
 server.use('/api/wordcount', wordcountRoutes);
 server.use('/api/leaderboard', leaderboardRoutes);
+server.use('/api/password', passwordRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
